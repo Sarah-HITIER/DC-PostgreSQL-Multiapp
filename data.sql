@@ -225,7 +225,7 @@ VALUES (1, 1, 2, 'shipped'), (2, 3, 3, 'delivered'), (3, 2, 1, 'processing');
 
 INSERT INTO
     shop.products_orders (product_id, order_id, quantity)
-VALUES (1, 1, 2), (2, 1, 1), (3, 1, 3), (2, 2, 1), (3, 3, 2);
+VALUES (1, 1, 2), (2, 1, 1), (2, 2, 1), (3, 3, 3);
 
 /*
  ************************************************************

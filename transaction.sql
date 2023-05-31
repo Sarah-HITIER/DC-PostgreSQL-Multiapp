@@ -1,15 +1,3 @@
-DROP SCHEMA IF EXISTS public CASCADE;
-
-DROP SCHEMA IF EXISTS account CASCADE;
-
-DROP SCHEMA IF EXISTS gallery CASCADE;
-
-DROP SCHEMA IF EXISTS shop CASCADE;
-
-DROP SCHEMA IF EXISTS forum CASCADE;
-
-ROLLBACK;
-
 /*
  ************************************************************
  * ACCOUNT SCHEMA
@@ -36,10 +24,10 @@ INSERT INTO
     )
 VALUES (
         'sarah',
-        'sarah.hitier@sfr.fr',
+        'sarah.hitier@example.com',
         'sarah',
         'Sarah biography',
-        'https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
+        'sarah.jpg'
     );
 
 -- Make a savepoint
@@ -58,10 +46,10 @@ INSERT INTO
     )
 VALUES (
         'sarah',
-        'test@test.com',
-        'test',
-        'test biography',
-        'https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
+        'sarah@example.com',
+        'password',
+        'Biography of Sarah',
+        'sarah.jpg'
     );
 
 -- Rollback to savepoint
@@ -84,35 +72,6 @@ WHERE id = 1;
 COMMIT;
 
 /*
- * ADRESSES CREATION
- */
-
-BEGIN;
-
--- Insert a new adress
-
-INSERT INTO
-    account.addresses (
-        address,
-        city,
-        postal_code,
-        country_code
-    )
-VALUES (
-        '8 bis Rue de la Fontaine au Roi',
-        'Paris',
-        '75011',
-        'FR'
-    ), (
-        '123 Rue Lyautey',
-        'Paris',
-        '75016',
-        'FR'
-    );
-
-COMMIT;
-
-/*
  * USERS ADRESSES RELATION
  */
 
@@ -122,7 +81,7 @@ BEGIN;
 
 INSERT INTO
     account.users_addresses (user_id, address_id)
-VALUES (1, 1), (1, 2);
+VALUES (1, 3);
 
 SAVEPOINT user_addresses_created;
 
@@ -138,14 +97,18 @@ COMMIT;
 
 -- Test references
 
-BEGIN;
-
 -- Test if the user is deleted, the relation with the address is deleted too
 
-DELETE FROM account.users WHERE id = 1;
+BEGIN;
+
+DELETE FROM account.users WHERE id = 4;
+
+COMMIT;
 
 -- Test if the address is deleted, the relation with the user is deleted too
 
-DELETE FROM account.addresses WHERE id = 1;
+BEGIN;
+
+DELETE FROM account.addresses WHERE id = 3;
 
 COMMIT;

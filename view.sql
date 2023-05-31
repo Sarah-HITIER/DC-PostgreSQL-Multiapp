@@ -1,6 +1,6 @@
 /*
  ************************************************************
- * GALLERY VIEW
+ * GALLERY VIEWS
  ************************************************************
  */
 
@@ -18,13 +18,10 @@ CREATE VIEW GALLERY
 	    a.description,
 	    a.views,
 	    a.likes,
-	    c.name AS category,
 	    u.username AS artist_username,
 	    u.profile_img AS artist_profile_img
 	FROM gallery.artworks a
 	    INNER JOIN account.users u ON a.artist_id = u.id
-	    INNER JOIN gallery.artwork_categories ac ON a.id = ac.artwork_id
-	    INNER JOIN gallery.categories c ON ac.category_id = c.id
 ; 
 
 SELECT * FROM gallery.gallery_view;
@@ -44,7 +41,7 @@ CREATE VIEW GALLERY
 	    a.views,
 	    a.likes,
 	    c.name AS category,
-	    u.username AS artist_username,
+	    u.username AS artist_username
 	FROM gallery.artworks a
 	    INNER JOIN account.users u ON a.artist_id = u.id
 	    INNER JOIN gallery.artwork_categories ac ON a.id = ac.artwork_id
@@ -54,38 +51,37 @@ CREATE VIEW GALLERY
 SELECT *
 FROM
     gallery.artworks_by_category
-WHERE c.name = 'Category 1';
+WHERE category = 'Category 2';
 
 /*
  * ***** VIEW *****
- * POPULAR IMAGES
- * Contains the most popular images
+ * POPULAR artworks
+ * Contains the most popular artworks
  */
 
 CREATE VIEW GALLERY 
-	.popular_images AS
+	.popular_artworks AS
 	SELECT
 	    a.id,
 	    a.title,
 	    a.description,
-	    i.url,
 	    a.views
 	FROM gallery.artworks a
-	    JOIN gallery.images i ON a.id = i.artwork_id
 	ORDER BY a.views
 DESC; 
 
-SELECT * FROM gallery.popular_images;
+SELECT * FROM gallery.popular_artworks;
 
 /*
  * ***** VIEW *****
  * ARTWORKS COMMENTS
  */
 
-CREATE VIEW ARTWORK_COMMENTS_VIEW 
-	AS
+CREATE OR REPLACE VIEW GALLERY 
+	.ARTWORK_COMMENTS_VIEW AS
 	SELECT
 	    c.id AS comment_id,
+	    c.artwork_id,
 	    c.content,
 	    c.created_at,
 	    u.username AS commenter_username
@@ -96,4 +92,119 @@ CREATE VIEW ARTWORK_COMMENTS_VIEW
 SELECT *
 FROM
     gallery.artwork_comments_view
-WHERE c.artwork_id = 1;
+WHERE artwork_id = 1;
+
+/*
+ ************************************************************
+ * SHOP VIEWS
+ ************************************************************
+ */
+
+/*
+ * ***** VIEW *****
+ * ORDERS
+ * Contains all the orders
+ */
+
+CREATE VIEW SHOP 
+	.ORDERS_VIEW AS
+	SELECT
+	    o.id AS order_id,
+	    o.created_at,
+	    o.total_price,
+	    o.status,
+	    u.username AS buyer_username,
+	    u.profile_img AS buyer_profile_img
+	FROM shop.orders o
+	    INNER JOIN account.users u ON o.user_id = u.id
+; 
+
+SELECT * FROM shop.orders_view;
+
+/*
+ * ***** VIEW *****
+ * SHOP PRODUCTS
+ */
+
+CREATE VIEW SHOP 
+	.SHOP_PRODUCTS_VIEW AS
+	SELECT
+	    p.id AS product_id,
+	    a.title,
+	    a.description,
+	    p.price,
+	    p.stock
+	FROM shop.products p
+	    INNER JOIN gallery.artworks a ON p.artwork_id = a.id
+; 
+
+SELECT * FROM shop.shop_products_view;
+
+/*
+ * ***** VIEW *****
+ * SHOP PRODUCTS BY ARTIST
+ */
+
+CREATE VIEW SHOP 
+	.SHOP_PRODUCTS_BY_ARTIST_VIEW AS
+	SELECT
+	    p.id AS product_id,
+	    a.title,
+	    a.description,
+	    p.price,
+	    p.stock,
+	    u.username AS artist_username
+	FROM shop.products p
+	    INNER JOIN gallery.artworks a ON p.artwork_id = a.id
+	    INNER JOIN account.users u ON a.artist_id = u.id
+; 
+
+SELECT *
+FROM
+    shop.shop_products_by_artist_view
+WHERE artist_username = 'user1';
+
+/*
+ * ***** VIEW *****
+ * SHOP PRODUCTS OUT OF STOCK
+ */
+
+CREATE VIEW SHOP 
+	.SHOP_PRODUCTS_OUT_OF_STOCK_VIEW AS
+	SELECT
+	    p.id AS product_id,
+	    a.title,
+	    a.description,
+	    p.price,
+	    p.stock
+	FROM shop.products p
+	    INNER JOIN gallery.artworks a ON p.artwork_id = a.id
+	WHERE p.stock = 0
+; 
+
+SELECT * FROM shop.shop_products_out_of_stock_view;
+
+/*
+ ************************************************************
+ * FORUM VIEWS
+ ************************************************************
+ */
+
+/*
+ * ***** VIEW *****
+ * FORUM DISCUSSIONS
+ */
+
+CREATE VIEW FORUM 
+	.FORUM_DISCUSSIONS_VIEW AS
+	SELECT
+	    d.id AS discussion_id,
+	    d.title,
+	    d.created_at,
+	    u.username AS author_username,
+	    u.profile_img AS author_profile_img
+	FROM forum.discussions d
+	    INNER JOIN account.users u ON d.user_id = u.id
+; 
+
+SELECT * FROM forum.forum_discussions_view;

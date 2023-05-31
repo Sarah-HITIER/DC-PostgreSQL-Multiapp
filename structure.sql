@@ -181,23 +181,6 @@ CREATE TABLE
         "updated_at" TIMESTAMP DEFAULT NOW()
     );
 
-/* 
- * ***** FUNCTION *****
- * ARTWORKS VIEWS
- * Increment the views of an artwork 
- * TODO
- */
-
-CREATE OR REPLACE FUNCTION GALLERY.INCREMENT_ARTWORK_VIEWS
-(ARTWORK_ID BIGINT) RETURNS VOID AS $$ 
-	BEGIN
-	UPDATE gallery.artworks
-	SET views = views + 1
-	WHERE id = artwork_id;
-	END;
-	$$ LANGUAGE 
-PLPGSQL; 
-
 /*
  * ***** TRIGGER *****
  * CREATED_AT AND UPDATED_AT
@@ -511,67 +494,6 @@ CREATE TABLE
     );
 
 /*
- * ***** TRIGGER *****
- * PRODUCT STOCK
- * Update the stock of the product in function of order status
- */
-
-CREATE OR REPLACE FUNCTION SHOP.UPDATE_PRODUCT_STOCK
-() RETURNS TRIGGER AS $$ 
-	BEGIN
-	    -- Update stock in shop.products when the order status changes
-	    IF NEW.status = 'shipped' THEN -- Decrease the stock by the quantity of products in the order
-	UPDATE shop.products
-	SET stock = stock - (
-	        SELECT
-	            products_orders.quantity
-	        FROM
-	            shop.products_orders
-	        WHERE
-	            order_id = NEW.id
-	            AND product_id = products.artwork_id
-	    )
-	WHERE id IN (
-	        SELECT product_id
-	        FROM
-	            shop.products_orders
-	        WHERE
-	            order_id = NEW.id
-	    );
-	ELSIF NEW.status = 'cancelled'
-	OR NEW.status = 'returned' THEN -- Increase the stock by the quantity of products in the order
-	UPDATE shop.products
-	SET stock = stock + (
-	        SELECT quantity
-	        FROM
-	            shop.products_orders
-	        WHERE
-	            order_id = NEW.id
-	            AND product_id = products.artwork_id
-	    )
-	WHERE id IN (
-	        SELECT product_id
-	        FROM
-	            shop.products_orders
-	        WHERE
-	            order_id = NEW.id
-	    );
-	END IF;
-	RETURN NEW;
-	END;
-	$$ LANGUAGE 
-PLPGSQL; 
-
-CREATE TRIGGER UPDATE_PRODUCT_STOCK 
-	AFTER
-	INSERT OR
-	UPDATE
-	    ON shop.orders FOR EACH ROW
-	EXECUTE
-	    PROCEDURE shop.update_product_stock()
-; 
-
-/*
  * ***** TABLE *****
  * PRODUCTS ORDERS
  * Associates products with orders
@@ -623,6 +545,51 @@ CREATE TRIGGER UPDATE_ORDER_TOTAL_PRICE
 	    ON shop.products_orders FOR EACH ROW
 	EXECUTE
 	    PROCEDURE shop.update_order_total_price()
+; 
+
+/*
+ * ***** TRIGGER *****
+ * UPDATE PRODUCT STOCK
+ * Update the stock of the product in function of the quantity ordered
+ */
+
+CREATE OR REPLACE FUNCTION UPDATE_PRODUCT_STOCK() RETURNS 
+TRIGGER AS $$ 
+	BEGIN
+	    IF TG_OP = 'INSERT'
+	    OR TG_OP = 'UPDATE' THEN -- Check if stock is sufficient
+	    IF NEW.quantity > (
+	        SELECT stock
+	        FROM shop.products
+	        WHERE
+	            id = NEW.product_id
+	    ) THEN -- Raise an exception if stock is insufficient
+	    RAISE EXCEPTION 'Insufficient stock for product: %',
+	    NEW.product_id;
+	ELSE -- Update product stock
+	UPDATE shop.products
+	SET stock = stock - NEW.quantity
+	WHERE id = NEW.product_id;
+	END IF;
+	END IF;
+	IF TG_OP = 'DELETE' THEN -- Update product stock
+	UPDATE shop.products
+	SET stock = stock + OLD.quantity
+	WHERE id = OLD.product_id;
+	END IF;
+	RETURN NEW;
+	END;
+	$$ LANGUAGE 
+PLPGSQL; 
+
+CREATE TRIGGER UPDATE_PRODUCT_STOCK_TRIGGER 
+	BEFORE
+	INSERT OR
+	UPDATE OR
+	DELETE
+	    ON shop.products_orders FOR EACH ROW
+	EXECUTE
+	    PROCEDURE update_product_stock()
 ; 
 
 /*
@@ -720,49 +687,3 @@ CREATE TRIGGER UPDATE_POSTS_TIMESTAMP
 	EXECUTE
 	    PROCEDURE update_timestamp()
 ; 
-
-/*
- ************************************************************
- * FONCTIONS
- ************************************************************
- */
-
--- CREATE FUNCTION CALCULATE_AVERAGE_VIEWS(ARTIST_ID BIGINT
-
--- ) RETURNS FLOAT AS $$
-
--- 	DECLARE total_views INT;
-
--- 	artwork_count INT;
-
--- 	average_views FLOAT;
-
--- 	BEGIN
-
--- 	SELECT
-
--- 	    SUM(views),
-
--- 	    COUNT(*) INTO total_views,
-
--- 	    artwork_count
-
--- 	FROM gallery.artworks
-
--- 	WHERE artist_id = artist_id;
-
--- 	IF artwork_count > 0 THEN average_views := total_views :: FLOAT / artwork_count;
-
--- 	ELSE average_views := 0;
-
--- 	END IF;
-
--- 	RETURN average_views;
-
--- 	END;
-
--- 	$$ LANGUAGE
-
--- PLPGSQL;
-
--- SELECT calculate_average_views(1);
